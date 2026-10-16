@@ -58,7 +58,7 @@ export function SiteNav() {
       >
         <Link href="/" aria-label="Crown, ir al inicio" className="flex items-center gap-2.5">
           <CrownMark className="h-[18px] w-auto" />
-          <span className="display-md text-[15px] lowercase">crown</span>
+          <span className="display-md text-[15px] lowercase"></span>
         </Link>
 
         <Suspense fallback={<NavLinkList pathname={null} />}>
