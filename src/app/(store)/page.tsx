@@ -1,6 +1,8 @@
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
-import { CrownMark } from "@/components/crown-logo";
+import Image from "next/image";
+import { ArrowUpRight, ChevronDown } from "lucide-react";
+import "@fontsource/libre-caslon-text/400.css";
+import "@fontsource/pinyon-script/400.css";
 import { ProductCard } from "@/components/product-card";
 import { getCategories, getFeaturedProducts } from "@/lib/queries";
 
@@ -17,25 +19,51 @@ export default function HomePage() {
 
 function Hero() {
   return (
-    <section className="flex h-svh min-h-[640px] flex-col px-5 pt-24 pb-8 sm:px-10">
-      {/* El logo es la imagen: crece hasta donde da el alto de la pantalla y deja el mensaje siempre a la vista. */}
-      <div className="hero-mark mx-auto flex min-h-0 w-full max-w-[1500px] flex-1 items-center justify-center py-4">
-        <CrownMark className="h-full max-h-full w-auto max-w-full" preserveAspectRatio="xMidYMid meet" />
-      </div>
-      <div className="mx-auto grid w-full max-w-[1500px] gap-6 pt-4 md:grid-cols-[1fr_auto] md:items-end">
-        <h1 className="display text-[clamp(1.9rem,4.4vw,4.2rem)]">
-          <span className="block">Hecha para entrenar.</span>
-          <span className="block">Hecha para durar.</span>
-        </h1>
-        <div className="flex items-center gap-3">
-          <Link href="/tienda" className="btn btn-primary px-7 py-4">
-            Ver la tienda
-          </Link>
-          <Link href="/#nosotros" className="btn btn-outline px-7 py-4">
-            Conocé Crown
-          </Link>
+    <section className="flex h-svh min-h-[600px] flex-col">
+      {/* Foto a pantalla completa. El logo vive en la barra flotante, como en el ejemplo. */}
+      <div className="relative flex-1 overflow-hidden bg-[#0d2410]">
+        <Image src="/hero.jpg" alt="" fill priority sizes="100vw" className="object-cover object-center" />
+        {/* Degradados: oscurecen la izquierda (texto) y el borde superior (barra flotante). */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/15 to-transparent" aria-hidden />
+        <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/35 to-transparent" aria-hidden />
+
+        <div className="hero-mark relative flex h-full w-full flex-col justify-center px-5 pt-20 sm:pl-[10vw]">
+          {/* Tres tipografías, como en el ejemplo: sans en negrita, serif clásica y script caligráfica. */}
+          <h1
+            aria-label="crowe style only for true Athletes"
+            className="text-[clamp(2.2rem,4.1vw,4.6rem)] font-normal text-white [text-shadow:0_1px_12px_rgba(0,0,0,0.25)]"
+          >
+            <span aria-hidden className="block leading-[1.05]">
+              <span className="font-bold" style={{ fontFamily: '"Archivo Variable", sans-serif', fontStretch: "112%", letterSpacing: "-0.02em" }}>
+                crowe
+              </span>{" "}
+              <span style={{ fontFamily: '"Libre Caslon Text", Georgia, serif' }}>style</span>
+            </span>
+            <span aria-hidden className="block text-[0.78em] leading-[1.15]" style={{ fontFamily: '"Libre Caslon Text", Georgia, serif' }}>
+              only for true
+            </span>
+            <span aria-hidden className="-mt-[0.15em] block text-[2em] leading-[1.1]" style={{ fontFamily: '"Pinyon Script", cursive' }}>
+              Athletes
+            </span>
+          </h1>
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <Link href="/tienda" className="btn bg-white px-7 py-4 text-black hover:bg-white/85">
+              Ver la tienda
+            </Link>
+            <Link href="/#nosotros" className="btn border border-white px-7 py-4 text-white hover:bg-white hover:text-black">
+              Conocé Crown
+            </Link>
+          </div>
         </div>
       </div>
+
+      {/* Barra blanca inferior, como el "find us." del ejemplo. */}
+      <Link
+        href="/#destacados"
+        className="display-md flex h-16 shrink-0 items-center justify-center gap-2 bg-white text-lg lowercase transition-colors hover:bg-neutral-100"
+      >
+        ver destacados <ChevronDown size={22} strokeWidth={2.5} aria-hidden />
+      </Link>
     </section>
   );
 }
@@ -43,7 +71,7 @@ function Hero() {
 async function Featured() {
   const products = await getFeaturedProducts(4);
   return (
-    <section className="mx-auto mt-24 max-w-[1500px] px-5 sm:px-10">
+    <section id="destacados" className="mx-auto mt-24 max-w-[1500px] scroll-mt-28 px-5 sm:px-10">
       <div className="mb-8 flex items-end justify-between gap-4">
         <h2 className="display-md text-3xl sm:text-5xl">Destacados</h2>
         <Link href="/tienda" className="flex items-center gap-1 font-semibold underline-offset-4 hover:underline">

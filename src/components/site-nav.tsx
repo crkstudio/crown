@@ -7,9 +7,12 @@ import { ShoppingBag } from "lucide-react";
 import { CrownMark } from "./crown-logo";
 import { cartCount, useCart, useHydrated } from "@/lib/cart";
 import { cn } from "@/lib/utils";
+import "@fontsource/pinyon-script/400.css";
 
-const links = [
+const links: { href: string; label: string; script?: boolean }[] = [
   { href: "/tienda", label: "Tienda" },
+  // "Athletes" usa la misma tipografía script que el hero y la pantalla de atletas.
+  { href: "/athletes", label: "Athletes", script: true },
   { href: "/#nosotros", label: "Nosotros" },
 ];
 
@@ -23,14 +26,17 @@ function NavLinkList({ pathname }: { pathname: string | null }) {
   return (
     <ul className="flex items-center gap-0.5">
       {links.map((l) => {
-        const active = l.href === "/tienda" && !!pathname?.startsWith("/tienda");
+        const active = !l.href.includes("#") && !!pathname?.startsWith(l.href);
         return (
           <li key={l.href}>
             <Link
               href={l.href}
               aria-current={active ? "page" : undefined}
+              style={l.script ? { fontFamily: '"Pinyon Script", cursive' } : undefined}
               className={cn(
-                "rounded-full px-3.5 py-2 text-sm font-medium transition-colors hover:bg-black/[0.07] sm:px-4",
+                "rounded-full px-2 py-2 text-[13px] font-medium transition-colors hover:bg-black/[0.07] sm:px-4 sm:text-sm",
+                // La script tiene letra más chica: se agranda para que pese lo mismo que las otras.
+                l.script && "py-1.5 text-[20px] leading-none font-normal sm:text-[23px]",
                 active && "bg-black/[0.07]",
               )}
             >
@@ -43,7 +49,7 @@ function NavLinkList({ pathname }: { pathname: string | null }) {
   );
 }
 
-/** Barra flotante estilo "píldora" con efecto liquid glass. */
+/** Barra flotante estilo "píldora" con efecto liquid glass. Se ajusta al contenido: sin espacios vacíos entre elementos. */
 export function SiteNav() {
   const hydrated = useHydrated();
   const count = useCart((s) => cartCount(s.lines));
@@ -54,11 +60,10 @@ export function SiteNav() {
     <header className="pointer-events-none fixed inset-x-0 top-3 z-40 flex justify-center px-3 sm:top-4 sm:px-4">
       <nav
         aria-label="Principal"
-        className="glass pointer-events-auto flex h-14 w-full max-w-[560px] items-center justify-between rounded-full pr-2 pl-5"
+        className="glass pointer-events-auto flex h-14 w-auto max-w-full items-center gap-2 rounded-full pr-2 pl-5 sm:gap-3"
       >
-        <Link href="/" aria-label="Crown, ir al inicio" className="flex items-center gap-2.5">
+        <Link href="/" aria-label="Crown, ir al inicio" className="flex items-center">
           <CrownMark className="h-[18px] w-auto" />
-          <span className="display-md text-[15px] lowercase"></span>
         </Link>
 
         <Suspense fallback={<NavLinkList pathname={null} />}>
