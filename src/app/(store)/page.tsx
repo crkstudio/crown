@@ -28,6 +28,15 @@ function Hero() {
         <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/35 to-transparent" aria-hidden />
 
         <div className="hero-mark relative flex h-full w-full flex-col justify-center px-5 pt-20 sm:pl-[10vw]">
+          {/* "Athletes" se va descubriendo de izquierda a derecha, como escrito a mano. Los márgenes negativos evitan recortar los trazos que sobresalen de la caja. */}
+          <style>{`
+            @keyframes write-on {
+              from { clip-path: inset(-25% 100% -25% -10%); }
+              to   { clip-path: inset(-25% -10% -25% -10%); }
+            }
+            .write-on { animation: write-on 1.1s cubic-bezier(0.45, 0.05, 0.35, 1) 0.15s both; }
+            @media (prefers-reduced-motion: reduce) { .write-on { animation: none; } }
+          `}</style>
           {/* Tres tipografías, como en el ejemplo: sans en negrita, serif clásica y script caligráfica. */}
           <h1
             aria-label="crowe style only for true Athletes"
@@ -42,7 +51,7 @@ function Hero() {
             <span aria-hidden className="block text-[0.78em] leading-[1.15]" style={{ fontFamily: '"Libre Caslon Text", Georgia, serif' }}>
               only for true
             </span>
-            <span aria-hidden className="-mt-[0.15em] block text-[2em] leading-[1.1]" style={{ fontFamily: '"Pinyon Script", cursive' }}>
+            <span aria-hidden className="write-on -mt-[0.15em] block w-fit text-[2em] leading-[1.1]" style={{ fontFamily: '"Pinyon Script", cursive' }}>
               Athletes
             </span>
           </h1>
