@@ -5,7 +5,7 @@ import "@fontsource/pinyon-script/400.css";
 
 export const metadata: Metadata = {
   title: "Athletes",
-  description: "Las personas que entrenan con Crown.",
+  description: "Las personas que entrenan con crown.",
 };
 
 export default function AthletesPage() {
@@ -14,7 +14,7 @@ export default function AthletesPage() {
       <h1 className="text-[clamp(4rem,12vw,10rem)] leading-[1.1] font-normal" style={{ fontFamily: '"Pinyon Script", cursive' }}>
         Athletes
       </h1>
-      <p className="mt-2 max-w-xl text-lg text-muted">Las personas que entrenan con Crown.</p>
+      <p className="mt-2 max-w-xl text-lg text-muted">Las personas que entrenan con crown.</p>
 
       <ul className="mt-12 grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 lg:grid-cols-4">
         {athletes.map((a, i) => (

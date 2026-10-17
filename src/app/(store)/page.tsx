@@ -39,12 +39,12 @@ function Hero() {
           `}</style>
           {/* Tres tipografías, como en el ejemplo: sans en negrita, serif clásica y script caligráfica. */}
           <h1
-            aria-label="crowe style only for true Athletes"
+            aria-label="crown style only for true Athletes"
             className="text-[clamp(2.2rem,4.1vw,4.6rem)] font-normal text-white [text-shadow:0_1px_12px_rgba(0,0,0,0.25)]"
           >
             <span aria-hidden className="block leading-[1.05]">
               <span className="font-bold" style={{ fontFamily: '"Archivo Variable", sans-serif', fontStretch: "112%", letterSpacing: "-0.02em" }}>
-                crowe
+                crown
               </span>{" "}
               <span style={{ fontFamily: '"Libre Caslon Text", Georgia, serif' }}>style</span>
             </span>
@@ -60,7 +60,7 @@ function Hero() {
               Ver la tienda
             </Link>
             <Link href="/#nosotros" className="btn border border-white px-7 py-4 text-white hover:bg-white hover:text-black">
-              Conocé Crown
+              Conocé crown
             </Link>
           </div>
         </div>

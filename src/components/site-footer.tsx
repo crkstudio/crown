@@ -29,7 +29,7 @@ export function SiteFooter() {
           </ul>
         </nav>
       </div>
-      <div className="mx-auto max-w-[1500px] px-5 pb-8 text-sm text-muted sm:px-10">© 2026 Crown. Todos los derechos reservados.</div>
+      <div className="mx-auto max-w-[1500px] px-5 pb-8 text-sm text-muted sm:px-10">© 2026 crown. Todos los derechos reservados.</div>
     </footer>
   );
 }
