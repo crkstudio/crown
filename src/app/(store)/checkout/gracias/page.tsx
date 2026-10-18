@@ -6,6 +6,7 @@ import { connection } from "next/server";
 import { db, schema } from "@/db";
 import { ClearCart } from "@/components/clear-cart";
 import { CrownMark } from "@/components/crown-logo";
+import { confirmMercadoPagoPayment } from "@/lib/payments/confirm";
 
 export const metadata: Metadata = { title: "Gracias por tu compra", robots: { index: false } };
 
@@ -22,6 +23,17 @@ export default function ThanksPage(props: PageProps<"/checkout/gracias">) {
 async function Content({ searchParams }: Pick<PageProps<"/checkout/gracias">, "searchParams">) {
   await connection();
   const params = await searchParams;
+
+  // Mercado Pago agrega payment_id al volver. No nos fiamos del dato: se consulta el pago a MP.
+  const paymentId = typeof params.payment_id === "string" ? params.payment_id : undefined;
+  if (paymentId && /^\d+$/.test(paymentId)) {
+    try {
+      await confirmMercadoPagoPayment(paymentId);
+    } catch (e) {
+      console.error("[gracias] no se pudo confirmar el pago", e);
+    }
+  }
+
   const number = Number(params.pedido);
   const order = Number.isInteger(number)
     ? (await db.select({ status: schema.orders.status }).from(schema.orders).where(eq(schema.orders.number, number)).limit(1))[0]
