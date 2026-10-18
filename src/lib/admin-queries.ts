@@ -3,7 +3,7 @@ import { and, asc, count, desc, eq, gte, inArray, like, lte, or, sql } from "dri
 import { db, schema } from "@/db";
 import type { OrderStatus } from "@/db/schema";
 import { requireAdmin } from "./auth";
-import { readSettings } from "./queries";
+import { readHomeSections, readSettings } from "./queries";
 import { REVENUE_STATUSES } from "./labels";
 
 const { products, variants, customers, orders, orderItems, popups } = schema;
@@ -280,6 +280,11 @@ export async function getAdminPopups() {
 export async function getAdminPopup(id: number) {
   await requireAdmin();
   return db.select().from(popups).where(eq(popups.id, id)).get() ?? null;
+}
+
+export async function getAdminHomeSections() {
+  await requireAdmin();
+  return readHomeSections();
 }
 
 export async function getAdminSettings() {

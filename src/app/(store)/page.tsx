@@ -6,21 +6,47 @@ import "@fontsource/pinyon-script/400.css";
 import { ProductCard } from "@/components/product-card";
 import { ProductImage } from "@/components/product-image";
 import { athletes } from "@/lib/athletes";
-import { getCategories, getFeaturedProducts } from "@/lib/queries";
+import { getCategories, getFeaturedProducts, getHomeSections, getStoreProducts } from "@/lib/queries";
+import type { HomeSectionId } from "@/lib/home-sections";
 
-export default function HomePage() {
+/** A dónde baja la barra blanca de la portada: la primera sección visible que sigue. */
+const NEXT_LINK: Partial<Record<HomeSectionId, { href: string; label: string }>> = {
+  athletes: { href: "/#athletes", label: "conocé a los athletes" },
+  featured: { href: "/#destacados", label: "ver destacados" },
+  products: { href: "/#productos", label: "ver productos" },
+  categories: { href: "/#categorias", label: "ver categorías" },
+  about: { href: "/#nosotros", label: "conocé crown" },
+};
+
+export default async function HomePage() {
+  // El orden y qué secciones se ven lo decide el panel de admin (Página de inicio).
+  const visible = (await getHomeSections()).filter((s) => s.enabled).map((s) => s.id);
+  const next = visible.find((id) => id !== "hero");
+
   return (
-    <>
-      <Hero />
-      <Athletes />
-      <Featured />
-      <Categories />
-      <About />
-    </>
+    // Si no hay portada, la barra flotante queda sobre la primera sección: se deja aire arriba.
+    <div className={visible[0] === "hero" ? undefined : "pt-28"}>
+      {visible.map((id) => {
+        switch (id) {
+          case "hero":
+            return <Hero key={id} next={next ? NEXT_LINK[next] : undefined} />;
+          case "athletes":
+            return <Athletes key={id} />;
+          case "featured":
+            return <Featured key={id} />;
+          case "products":
+            return <Products key={id} />;
+          case "categories":
+            return <Categories key={id} />;
+          case "about":
+            return <About key={id} />;
+        }
+      })}
+    </div>
   );
 }
 
-function Hero() {
+function Hero({ next }: { next?: { href: string; label: string } }) {
   return (
     <section className="flex h-svh min-h-[600px] flex-col">
       {/* Foto a pantalla completa. El logo vive en la barra flotante, como en el ejemplo. */}
@@ -70,12 +96,14 @@ function Hero() {
       </div>
 
       {/* Barra blanca inferior, como el "find us." del ejemplo. */}
-      <Link
-        href="/#athletes"
-        className="display-md flex h-16 shrink-0 items-center justify-center gap-2 bg-white text-lg lowercase transition-colors hover:bg-neutral-100"
-      >
-        find us <ChevronDown size={22} strokeWidth={2.5} aria-hidden />
-      </Link>
+      {next && (
+        <Link
+          href={next.href}
+          className="display-md flex h-16 shrink-0 items-center justify-center gap-2 bg-white text-lg lowercase transition-colors hover:bg-neutral-100"
+        >
+          {next.label} <ChevronDown size={22} strokeWidth={2.5} aria-hidden />
+        </Link>
+      )}
     </section>
   );
 }
@@ -151,11 +179,43 @@ async function Featured() {
   );
 }
 
+async function Products() {
+  const products = (await getStoreProducts()).slice(0, 8);
+  return (
+    <section id="productos" className="mx-auto mt-32 max-w-[1500px] scroll-mt-28 px-5 sm:px-10" aria-labelledby="productos-title">
+      <div className="mb-8 flex items-end justify-between gap-4">
+        <h2 id="productos-title" className="display-md text-3xl sm:text-5xl">
+          Productos
+        </h2>
+        <Link href="/tienda" className="flex items-center gap-1 font-semibold underline-offset-4 hover:underline">
+          Ver toda la tienda <ArrowUpRight size={18} aria-hidden />
+        </Link>
+      </div>
+      {products.length === 0 ? (
+        <p className="rounded-2xl bg-surface p-10 text-center text-muted">Muy pronto vas a ver acá los primeros productos.</p>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-10 lg:grid-cols-4">
+            {products.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+          <div className="mt-12 flex justify-center">
+            <Link href="/tienda" className="btn btn-outline px-8">
+              Ver todos los productos
+            </Link>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
 async function Categories() {
   const categories = await getCategories();
   if (categories.length === 0) return null;
   return (
-    <section className="mx-auto mt-32 max-w-[1500px] px-5 sm:px-10" aria-labelledby="cats">
+    <section id="categorias" className="mx-auto mt-32 max-w-[1500px] scroll-mt-28 px-5 sm:px-10" aria-labelledby="cats">
       <div className="mb-8 flex items-end justify-between gap-4">
         <h2 id="cats" className="display-md text-3xl sm:text-5xl">
           Comprá por categoría

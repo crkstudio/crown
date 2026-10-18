@@ -3,6 +3,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import { and, asc, count, desc, eq, inArray } from "drizzle-orm";
 import { db, schema } from "@/db";
 import type { Product, Variant } from "@/db/schema";
+import { HOME_SECTIONS_KEY, normalizeHomeSections, type HomeSectionConfig } from "@/lib/home-sections";
 
 const { products, variants, settings, popups } = schema;
 
@@ -132,6 +133,22 @@ export async function readSettings(): Promise<StoreSettings> {
     freeShippingFrom: num("free_shipping_from", 120000),
     lowStockThreshold: num("low_stock_threshold", 5),
   };
+}
+
+/* ───────────── Secciones de la home ───────────── */
+
+/** Orden y visibilidad de las secciones de la página de inicio (con caché; se invalida con el tag "settings"). */
+export async function getHomeSections(): Promise<HomeSectionConfig[]> {
+  "use cache";
+  cacheTag("settings");
+  cacheLife("minutes");
+  return readHomeSections();
+}
+
+/** Lectura directa (sin caché) para el panel. */
+export async function readHomeSections(): Promise<HomeSectionConfig[]> {
+  const row = await db.select().from(settings).where(eq(settings.key, HOME_SECTIONS_KEY)).get();
+  return normalizeHomeSections(row?.value);
 }
 
 /* ───────────── Pop-ups ───────────── */

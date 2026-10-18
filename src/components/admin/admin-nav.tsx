@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Boxes, ExternalLink, LayoutDashboard, LogOut, Megaphone, Receipt, Settings, Shirt, Users } from "lucide-react";
+import { Boxes, ExternalLink, LayoutDashboard, LayoutTemplate, LogOut, Megaphone, Receipt, Settings, Shirt, Users } from "lucide-react";
 import { CrownMark } from "@/components/crown-logo";
 import { logout } from "@/app/actions/auth";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,7 @@ const items = [
   { href: "/admin/stock", label: "Stock", icon: Boxes },
   { href: "/admin/clientes", label: "Clientes", icon: Users },
   { href: "/admin/popups", label: "Pop-ups", icon: Megaphone },
+  { href: "/admin/inicio", label: "Página de inicio", icon: LayoutTemplate },
   { href: "/admin/ajustes", label: "Ajustes", icon: Settings },
 ];
 
