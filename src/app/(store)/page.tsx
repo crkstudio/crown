@@ -180,7 +180,7 @@ async function Featured() {
 }
 
 async function Products() {
-  const products = (await getStoreProducts()).slice(0, 8);
+  const products = await getStoreProducts(undefined, "nuevos", 8);
   return (
     <section id="productos" className="mx-auto mt-32 max-w-[1500px] scroll-mt-28 px-5 sm:px-10" aria-labelledby="productos-title">
       <div className="mb-8 flex items-end justify-between gap-4">

@@ -14,57 +14,55 @@ export async function getDashboard() {
   await requireAdmin();
   const settings = await readSettings();
   const since = new Date(Date.now() - 30 * 86400_000);
+  const since14 = new Date(Date.now() - 14 * 86400_000);
 
-  const [rev] = await db
-    .select({ total: sql<number>`coalesce(sum(${orders.total}), 0)::int`, n: count() })
-    .from(orders)
-    .where(and(inArray(orders.status, REVENUE_STATUSES), gte(orders.createdAt, since)));
-  const [pending] = await db.select({ n: count() }).from(orders).where(eq(orders.status, "pending"));
-  const [toShip] = await db.select({ n: count() }).from(orders).where(eq(orders.status, "paid"));
-  const [newCustomers] = await db.select({ n: count() }).from(customers).where(gte(customers.createdAt, since));
-  const [totalCustomers] = await db.select({ n: count() }).from(customers);
-
-  const lowStock = await db
-    .select({
-      variantId: variants.id,
-      productId: products.id,
-      name: products.name,
-      size: variants.size,
-      color: variants.color,
-      stock: variants.stock,
-    })
-    .from(variants)
-    .innerJoin(products, eq(products.id, variants.productId))
-    .where(lte(variants.stock, settings.lowStockThreshold))
-    .orderBy(asc(variants.stock), asc(products.name))
-    .limit(8);
-  const [lowCount] = await db
-    .select({ n: count() })
-    .from(variants)
-    .where(lte(variants.stock, settings.lowStockThreshold));
-
-  const recent = await db
-    .select({
-      id: orders.id,
-      number: orders.number,
-      total: orders.total,
-      status: orders.status,
-      createdAt: orders.createdAt,
-      customer: orders.shippingName,
-    })
-    .from(orders)
-    .orderBy(desc(orders.createdAt))
-    .limit(6);
-
-  // Ingresos por día de los últimos 14 días (hora Argentina)
-  const days14 = await db
-    .select({
-      day: sql<string>`to_char(${orders.createdAt} at time zone 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD')`,
-      total: sql<number>`coalesce(sum(${orders.total}), 0)::int`,
-    })
-    .from(orders)
-    .where(and(inArray(orders.status, REVENUE_STATUSES), gte(orders.createdAt, new Date(Date.now() - 14 * 86400_000))))
-    .groupBy(sql`1`);
+  // Las 9 consultas salen a la vez (el pool de conexiones las reparte) en vez de una detrás de otra.
+  const [[rev], [pending], [toShip], [newCustomers], [totalCustomers], lowStock, [lowCount], recent, days14] = await Promise.all([
+    db
+      .select({ total: sql<number>`coalesce(sum(${orders.total}), 0)::int`, n: count() })
+      .from(orders)
+      .where(and(inArray(orders.status, REVENUE_STATUSES), gte(orders.createdAt, since))),
+    db.select({ n: count() }).from(orders).where(eq(orders.status, "pending")),
+    db.select({ n: count() }).from(orders).where(eq(orders.status, "paid")),
+    db.select({ n: count() }).from(customers).where(gte(customers.createdAt, since)),
+    db.select({ n: count() }).from(customers),
+    db
+      .select({
+        variantId: variants.id,
+        productId: products.id,
+        name: products.name,
+        size: variants.size,
+        color: variants.color,
+        stock: variants.stock,
+      })
+      .from(variants)
+      .innerJoin(products, eq(products.id, variants.productId))
+      .where(lte(variants.stock, settings.lowStockThreshold))
+      .orderBy(asc(variants.stock), asc(products.name))
+      .limit(8),
+    db.select({ n: count() }).from(variants).where(lte(variants.stock, settings.lowStockThreshold)),
+    db
+      .select({
+        id: orders.id,
+        number: orders.number,
+        total: orders.total,
+        status: orders.status,
+        createdAt: orders.createdAt,
+        customer: orders.shippingName,
+      })
+      .from(orders)
+      .orderBy(desc(orders.createdAt))
+      .limit(6),
+    // Ingresos por día de los últimos 14 días (hora Argentina)
+    db
+      .select({
+        day: sql<string>`to_char(${orders.createdAt} at time zone 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD')`,
+        total: sql<number>`coalesce(sum(${orders.total}), 0)::int`,
+      })
+      .from(orders)
+      .where(and(inArray(orders.status, REVENUE_STATUSES), gte(orders.createdAt, since14)))
+      .groupBy(sql`1`),
+  ]);
 
   // Serie continua de 14 días (los días sin ventas valen 0), en hora de Argentina.
   const dayKey = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
@@ -117,7 +115,6 @@ export async function getAdminProducts(filter: ProductFilter = "all", q = "") {
             rows.map((r) => r.id),
           ),
         )
-        
     : [];
   const withStock = rows.map((p) => {
     const mine = vs.filter((v) => v.productId === p.id);
@@ -128,9 +125,11 @@ export async function getAdminProducts(filter: ProductFilter = "all", q = "") {
 
 export async function getAdminProduct(id: number) {
   await requireAdmin();
-  const [p] = await db.select().from(products).where(eq(products.id, id)).limit(1);
+  const [[p], vs] = await Promise.all([
+    db.select().from(products).where(eq(products.id, id)).limit(1),
+    db.select().from(variants).where(eq(variants.productId, id)).orderBy(asc(variants.id)),
+  ]);
   if (!p) return null;
-  const vs = await db.select().from(variants).where(eq(variants.productId, id)).orderBy(asc(variants.id));
   return { ...p, variants: vs };
 }
 
@@ -199,9 +198,11 @@ export async function getAdminCustomers(q = "", marketingOnly = false) {
 
 export async function getAdminCustomer(id: number) {
   await requireAdmin();
-  const [c] = await db.select().from(customers).where(eq(customers.id, id)).limit(1);
+  const [[c], list] = await Promise.all([
+    db.select().from(customers).where(eq(customers.id, id)).limit(1),
+    db.select().from(orders).where(eq(orders.customerId, id)).orderBy(desc(orders.createdAt)),
+  ]);
   if (!c) return null;
-  const list = await db.select().from(orders).where(eq(orders.customerId, id)).orderBy(desc(orders.createdAt));
   return { ...c, orders: list };
 }
 
@@ -251,8 +252,10 @@ export async function getAdminOrder(id: number) {
   await requireAdmin();
   const [o] = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
   if (!o) return null;
-  const items = await db.select().from(orderItems).where(eq(orderItems.orderId, id)).orderBy(asc(orderItems.id));
-  const [customer] = o.customerId ? await db.select().from(customers).where(eq(customers.id, o.customerId)).limit(1) : [];
+  const [items, [customer]] = await Promise.all([
+    db.select().from(orderItems).where(eq(orderItems.orderId, id)).orderBy(asc(orderItems.id)),
+    o.customerId ? db.select().from(customers).where(eq(customers.id, o.customerId)).limit(1) : Promise.resolve([]),
+  ]);
   return { ...o, items, customer: customer ?? null };
 }
 
