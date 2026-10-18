@@ -4,12 +4,15 @@ import { ArrowUpRight, ChevronDown } from "lucide-react";
 import "@fontsource/libre-caslon-text/400.css";
 import "@fontsource/pinyon-script/400.css";
 import { ProductCard } from "@/components/product-card";
+import { ProductImage } from "@/components/product-image";
+import { athletes } from "@/lib/athletes";
 import { getCategories, getFeaturedProducts } from "@/lib/queries";
 
 export default function HomePage() {
   return (
     <>
       <Hero />
+      <Athletes />
       <Featured />
       <Categories />
       <About />
@@ -68,11 +71,59 @@ function Hero() {
 
       {/* Barra blanca inferior, como el "find us." del ejemplo. */}
       <Link
-        href="/#destacados"
+        href="/#athletes"
         className="display-md flex h-16 shrink-0 items-center justify-center gap-2 bg-white text-lg lowercase transition-colors hover:bg-neutral-100"
       >
-        ver destacados <ChevronDown size={22} strokeWidth={2.5} aria-hidden />
+        find us <ChevronDown size={22} strokeWidth={2.5} aria-hidden />
       </Link>
+    </section>
+  );
+}
+
+function Athletes() {
+  const list = athletes.slice(0, 4);
+  if (list.length === 0) return null;
+  return (
+    <section id="athletes" className="mx-auto mt-24 max-w-[1500px] scroll-mt-28 px-5 sm:px-10" aria-labelledby="athletes-title">
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:gap-16">
+        <div className="flex flex-col justify-between gap-8 lg:py-4">
+          <div>
+            <p className="text-sm font-semibold tracking-[0.2em] text-muted uppercase">La comunidad crown</p>
+            <h2
+              id="athletes-title"
+              className="mt-3 text-[clamp(4rem,9vw,8rem)] leading-[1.05] font-normal"
+              style={{ fontFamily: '"Pinyon Script", cursive' }}
+            >
+              Athletes
+            </h2>
+            <p className="mt-4 max-w-sm text-lg leading-relaxed text-muted">
+              Quienes entrenan con crown todos los días. Gente real, esfuerzo real.
+            </p>
+          </div>
+          <Link href="/athletes" className="btn btn-outline w-fit">
+            Conocer a los athletes <ArrowUpRight size={18} aria-hidden />
+          </Link>
+        </div>
+
+        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
+          {list.map((a) => (
+            <li key={a.id}>
+              <Link href="/athletes" className="group block">
+                <div className="relative overflow-hidden rounded-2xl">
+                  <ProductImage
+                    src={a.image}
+                    alt={a.name}
+                    sizes="(min-width: 1280px) 18vw, (min-width: 640px) 30vw, 50vw"
+                    className="aspect-[4/5] rounded-2xl transition-transform duration-500 group-hover:scale-[1.04]"
+                  />
+                </div>
+                <h3 className="mt-3 font-semibold">{a.name}</h3>
+                <p className="text-sm text-muted">{a.sport}</p>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
     </section>
   );
 }
@@ -105,20 +156,35 @@ async function Categories() {
   if (categories.length === 0) return null;
   return (
     <section className="mx-auto mt-32 max-w-[1500px] px-5 sm:px-10" aria-labelledby="cats">
-      <h2 id="cats" className="display-md mb-8 text-3xl sm:text-5xl">
-        Comprá por categoría
-      </h2>
-      <ul className="border-b border-line">
-        {categories.map((c) => (
+      <div className="mb-8 flex items-end justify-between gap-4">
+        <h2 id="cats" className="display-md text-3xl sm:text-5xl">
+          Comprá por categoría
+        </h2>
+        <Link href="/tienda" className="flex items-center gap-1 font-semibold underline-offset-4 hover:underline">
+          Ver todo <ArrowUpRight size={18} aria-hidden />
+        </Link>
+      </div>
+      <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        {categories.map((c, i) => (
           <li key={c.name}>
             <Link
               href={`/tienda?category=${encodeURIComponent(c.name)}`}
-              className="group flex items-baseline justify-between gap-6 border-t border-line py-5 sm:py-7"
+              className="group relative flex aspect-[4/5] flex-col justify-between overflow-hidden rounded-2xl bg-surface p-5 transition-colors duration-300 hover:bg-black hover:text-white sm:aspect-square sm:p-6"
             >
-              <span className="display text-[clamp(2.2rem,7vw,6rem)] transition-transform duration-300 group-hover:translate-x-3">{c.name}</span>
-              <span className="text-sm whitespace-nowrap text-muted">
-                {c.total} {c.total === 1 ? "producto" : "productos"}
-              </span>
+              <div className="flex items-start justify-between">
+                <span className="text-sm font-semibold text-muted transition-colors group-hover:text-white/60">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <span className="grid size-10 place-items-center rounded-full border border-line bg-white text-black transition-all duration-300 group-hover:rotate-45 group-hover:border-white">
+                  <ArrowUpRight size={18} aria-hidden />
+                </span>
+              </div>
+              <div>
+                <span className="display block text-[clamp(1.6rem,3.2vw,2.8rem)] leading-none break-words">{c.name}</span>
+                <span className="mt-2 block text-sm text-muted transition-colors group-hover:text-white/70">
+                  {c.total} {c.total === 1 ? "producto" : "productos"}
+                </span>
+              </div>
             </Link>
           </li>
         ))}
