@@ -2,10 +2,10 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { and, asc, count, desc, eq, inArray } from "drizzle-orm";
 import { db, schema } from "@/db";
-import type { Product, Variant } from "@/db/schema";
+import type { Athlete, Product, Variant } from "@/db/schema";
 import { HOME_SECTIONS_KEY, normalizeHomeSections, type HomeSectionConfig } from "@/lib/home-sections";
 
-const { products, variants, settings, popups } = schema;
+const { products, variants, settings, popups, athletes } = schema;
 
 export type StoreProduct = Product & { variants: Variant[]; inStock: boolean };
 export type SortKey = "nuevos" | "precio-asc" | "precio-desc";
@@ -134,6 +134,21 @@ export const getHomeSections = unstable_cache(async (): Promise<HomeSectionConfi
   tags: ["settings"],
   revalidate: TTL,
 });
+
+/* ───────────── Athletes ───────────── */
+
+export type StoreAthlete = Pick<Athlete, "id" | "name" | "sport" | "image">;
+
+export const getAthletes = unstable_cache(
+  async (): Promise<StoreAthlete[]> =>
+    db
+      .select({ id: athletes.id, name: athletes.name, sport: athletes.sport, image: athletes.image })
+      .from(athletes)
+      .where(eq(athletes.visible, true))
+      .orderBy(asc(athletes.position), asc(athletes.id)),
+  ["store-athletes"],
+  { tags: ["athletes"], revalidate: TTL },
+);
 
 /* ───────────── Pop-ups ───────────── */
 

@@ -128,6 +128,19 @@ export const orderItems = pgTable(
   (t) => [index("order_items_order_idx").on(t.orderId)],
 ).enableRLS();
 
+/* ───────────── Athletes ───────────── */
+export const athletes = pgTable("athletes", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  name: text("name").notNull(),
+  /** Etiqueta bajo el nombre: deporte, "Atleta crown", etc. */
+  sport: text("sport").notNull().default("Atleta crown"),
+  image: text("image"),
+  /** Orden de aparición (menor = primero). */
+  position: integer("position").notNull().default(0),
+  visible: boolean("visible").notNull().default(true),
+  createdAt: createdAt(),
+}).enableRLS();
+
 /* ───────────── Pop-ups comerciales ───────────── */
 export const POPUP_AUDIENCES = ["new", "all"] as const;
 export const POPUP_TRIGGERS = ["load", "delay", "exit"] as const;
@@ -165,4 +178,5 @@ export type Variant = typeof variants.$inferSelect;
 export type Customer = typeof customers.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
+export type Athlete = typeof athletes.$inferSelect;
 export type Popup = typeof popups.$inferSelect;

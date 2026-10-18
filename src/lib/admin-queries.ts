@@ -6,7 +6,7 @@ import { requireAdmin } from "./auth";
 import { readHomeSections, readSettings } from "./queries";
 import { REVENUE_STATUSES } from "./labels";
 
-const { products, variants, customers, orders, orderItems, popups } = schema;
+const { products, variants, customers, orders, orderItems, popups, athletes } = schema;
 
 /* ───────────── Resumen ───────────── */
 
@@ -280,4 +280,17 @@ export async function getAdminHomeSections() {
 export async function getAdminSettings() {
   await requireAdmin();
   return readSettings();
+}
+
+/* ───────────── Athletes ───────────── */
+
+export async function getAdminAthletes() {
+  await requireAdmin();
+  return await db.select().from(athletes).orderBy(asc(athletes.position), asc(athletes.id));
+}
+
+export async function getAdminAthlete(id: number) {
+  await requireAdmin();
+  const [a] = await db.select().from(athletes).where(eq(athletes.id, id)).limit(1);
+  return a ?? null;
 }

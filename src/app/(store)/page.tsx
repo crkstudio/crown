@@ -5,8 +5,7 @@ import "@fontsource/libre-caslon-text/400.css";
 import "@fontsource/pinyon-script/400.css";
 import { ProductCard } from "@/components/product-card";
 import { ProductImage } from "@/components/product-image";
-import { athletes } from "@/lib/athletes";
-import { getCategories, getFeaturedProducts, getHomeSections, getStoreProducts } from "@/lib/queries";
+import { getAthletes, getCategories, getFeaturedProducts, getHomeSections, getStoreProducts } from "@/lib/queries";
 import type { HomeSectionId } from "@/lib/home-sections";
 
 /** A dónde baja la barra blanca de la portada: la primera sección visible que sigue. */
@@ -108,8 +107,8 @@ function Hero({ next }: { next?: { href: string; label: string } }) {
   );
 }
 
-function Athletes() {
-  const list = athletes.slice(0, 4);
+async function Athletes() {
+  const list = (await getAthletes()).slice(0, 4);
   if (list.length === 0) return null;
   return (
     <section id="athletes" className="mx-auto mt-24 max-w-[1500px] scroll-mt-28 px-5 sm:px-10" aria-labelledby="athletes-title">
