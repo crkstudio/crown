@@ -32,7 +32,7 @@ export async function saveSettings(_prev: SettingsState, fd: FormData): Promise<
     ["low_stock_threshold", String(d.lowStockThreshold)],
   ];
   for (const [key, value] of rows) {
-    db.insert(schema.settings).values({ key, value }).onConflictDoUpdate({ target: schema.settings.key, set: { value } }).run();
+    await db.insert(schema.settings).values({ key, value }).onConflictDoUpdate({ target: schema.settings.key, set: { value } });
   }
   updateTag("settings");
   revalidatePath("/admin", "layout");

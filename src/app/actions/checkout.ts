@@ -82,9 +82,9 @@ export async function placeOrder(_prev: CheckoutState, formData: FormData): Prom
   }
 
   // 4) Crear pedido + reservar stock (transacción)
-  let created: ReturnType<typeof createOrder>;
+  let created: Awaited<ReturnType<typeof createOrder>>;
   try {
-    created = createOrder({
+    created = await createOrder({
       customer: { email: d.email, name: d.name, phone: d.phone, marketing: d.marketing },
       shipping: { name: d.name, phone: d.phone, address: d.address, city: d.city, province: d.province, zip: d.zip, notes: d.notes },
       lines: d.items,
@@ -111,7 +111,7 @@ export async function placeOrder(_prev: CheckoutState, formData: FormData): Prom
     redirectUrl = res.redirectUrl;
   } catch (e) {
     console.error("[checkout] createCheckout", e);
-    cancelOrderAndRestock(created.order.id);
+    await cancelOrderAndRestock(created.order.id);
     updateTag("products");
     return { values, error: "No pudimos iniciar el pago. No se te cobró nada; probá de nuevo." };
   }

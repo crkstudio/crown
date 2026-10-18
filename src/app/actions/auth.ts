@@ -47,7 +47,7 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   const key = `${parsed.data.email}|${ip}`;
   if (tooMany(key)) return { error: "Demasiados intentos. Esperá 15 minutos y volvé a probar.", email: typedEmail };
 
-  const admin = db.select().from(schema.admins).where(eq(schema.admins.email, parsed.data.email)).get();
+  const [admin] = await db.select().from(schema.admins).where(eq(schema.admins.email, parsed.data.email)).limit(1);
   const ok = await bcrypt.compare(parsed.data.password, admin?.passwordHash ?? getDummyHash());
   if (!admin || !ok) {
     recordFailure(key);
@@ -74,9 +74,9 @@ export async function changePassword(
   if (next.length < 10) return { error: "La nueva contraseña debe tener al menos 10 caracteres." };
   if (next === current) return { error: "La nueva contraseña tiene que ser distinta de la actual." };
 
-  const admin = db.select().from(schema.admins).where(eq(schema.admins.id, session.adminId)).get();
+  const [admin] = await db.select().from(schema.admins).where(eq(schema.admins.id, session.adminId)).limit(1);
   if (!admin || !(await bcrypt.compare(current, admin.passwordHash))) return { error: "La contraseña actual no es correcta." };
 
-  db.update(schema.admins).set({ passwordHash: await bcrypt.hash(next, 12) }).where(eq(schema.admins.id, admin.id)).run();
+  await db.update(schema.admins).set({ passwordHash: await bcrypt.hash(next, 12) }).where(eq(schema.admins.id, admin.id));
   return { ok: true };
 }

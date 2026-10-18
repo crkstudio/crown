@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, count, desc, eq, gte, inArray, like, lte, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import type { OrderStatus } from "@/db/schema";
 import { requireAdmin } from "./auth";
@@ -15,17 +15,16 @@ export async function getDashboard() {
   const settings = await readSettings();
   const since = new Date(Date.now() - 30 * 86400_000);
 
-  const [rev] = db
-    .select({ total: sql<number>`coalesce(sum(${orders.total}), 0)`, n: count() })
+  const [rev] = await db
+    .select({ total: sql<number>`coalesce(sum(${orders.total}), 0)::int`, n: count() })
     .from(orders)
-    .where(and(inArray(orders.status, REVENUE_STATUSES), gte(orders.createdAt, since)))
-    .all();
-  const [pending] = db.select({ n: count() }).from(orders).where(eq(orders.status, "pending")).all();
-  const [toShip] = db.select({ n: count() }).from(orders).where(eq(orders.status, "paid")).all();
-  const [newCustomers] = db.select({ n: count() }).from(customers).where(gte(customers.createdAt, since)).all();
-  const [totalCustomers] = db.select({ n: count() }).from(customers).all();
+    .where(and(inArray(orders.status, REVENUE_STATUSES), gte(orders.createdAt, since)));
+  const [pending] = await db.select({ n: count() }).from(orders).where(eq(orders.status, "pending"));
+  const [toShip] = await db.select({ n: count() }).from(orders).where(eq(orders.status, "paid"));
+  const [newCustomers] = await db.select({ n: count() }).from(customers).where(gte(customers.createdAt, since));
+  const [totalCustomers] = await db.select({ n: count() }).from(customers);
 
-  const lowStock = db
+  const lowStock = await db
     .select({
       variantId: variants.id,
       productId: products.id,
@@ -38,15 +37,13 @@ export async function getDashboard() {
     .innerJoin(products, eq(products.id, variants.productId))
     .where(lte(variants.stock, settings.lowStockThreshold))
     .orderBy(asc(variants.stock), asc(products.name))
-    .limit(8)
-    .all();
-  const [lowCount] = db
+    .limit(8);
+  const [lowCount] = await db
     .select({ n: count() })
     .from(variants)
-    .where(lte(variants.stock, settings.lowStockThreshold))
-    .all();
+    .where(lte(variants.stock, settings.lowStockThreshold));
 
-  const recent = db
+  const recent = await db
     .select({
       id: orders.id,
       number: orders.number,
@@ -57,19 +54,17 @@ export async function getDashboard() {
     })
     .from(orders)
     .orderBy(desc(orders.createdAt))
-    .limit(6)
-    .all();
+    .limit(6);
 
   // Ingresos por día de los últimos 14 días (hora Argentina)
-  const days14 = db
+  const days14 = await db
     .select({
-      day: sql<string>`strftime('%Y-%m-%d', ${orders.createdAt}, 'unixepoch', '-3 hours')`,
-      total: sql<number>`coalesce(sum(${orders.total}), 0)`,
+      day: sql<string>`to_char(${orders.createdAt} at time zone 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD')`,
+      total: sql<number>`coalesce(sum(${orders.total}), 0)::int`,
     })
     .from(orders)
     .where(and(inArray(orders.status, REVENUE_STATUSES), gte(orders.createdAt, new Date(Date.now() - 14 * 86400_000))))
-    .groupBy(sql`1`)
-    .all();
+    .groupBy(sql`1`);
 
   // Serie continua de 14 días (los días sin ventas valen 0), en hora de Argentina.
   const dayKey = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
@@ -105,16 +100,15 @@ export async function getAdminProducts(filter: ProductFilter = "all", q = "") {
   if (filter === "hidden") conditions.push(eq(products.listed, false));
   if (q.trim()) {
     const term = `%${q.trim().replace(/[%_]/g, "")}%`;
-    conditions.push(or(like(products.name, term), like(products.category, term)));
+    conditions.push(or(ilike(products.name, term), ilike(products.category, term)));
   }
-  const rows = db
+  const rows = await db
     .select()
     .from(products)
     .where(conditions.length ? and(...conditions) : undefined)
-    .orderBy(desc(products.createdAt), desc(products.id))
-    .all();
+    .orderBy(desc(products.createdAt), desc(products.id));
   const vs = rows.length
-    ? db
+    ? await db
         .select()
         .from(variants)
         .where(
@@ -123,7 +117,7 @@ export async function getAdminProducts(filter: ProductFilter = "all", q = "") {
             rows.map((r) => r.id),
           ),
         )
-        .all()
+        
     : [];
   const withStock = rows.map((p) => {
     const mine = vs.filter((v) => v.productId === p.id);
@@ -134,20 +128,16 @@ export async function getAdminProducts(filter: ProductFilter = "all", q = "") {
 
 export async function getAdminProduct(id: number) {
   await requireAdmin();
-  const p = db.select().from(products).where(eq(products.id, id)).get();
+  const [p] = await db.select().from(products).where(eq(products.id, id)).limit(1);
   if (!p) return null;
-  const vs = db.select().from(variants).where(eq(variants.productId, id)).orderBy(asc(variants.id)).all();
+  const vs = await db.select().from(variants).where(eq(variants.productId, id)).orderBy(asc(variants.id));
   return { ...p, variants: vs };
 }
 
 export async function getProductCategories() {
   await requireAdmin();
-  return db
-    .selectDistinct({ name: products.category })
-    .from(products)
-    .orderBy(asc(products.category))
-    .all()
-    .map((r) => r.name);
+  const rows = await db.selectDistinct({ name: products.category }).from(products).orderBy(asc(products.category));
+  return rows.map((r) => r.name);
 }
 
 /* ───────────── Stock ───────────── */
@@ -160,9 +150,9 @@ export async function getStockRows(filter: "all" | "low" | "out" = "all", q = ""
   if (filter === "low") conditions.push(lte(variants.stock, settings.lowStockThreshold));
   if (q.trim()) {
     const term = `%${q.trim().replace(/[%_]/g, "")}%`;
-    conditions.push(or(like(products.name, term), like(variants.sku, term), like(variants.size, term), like(variants.color, term)));
+    conditions.push(or(ilike(products.name, term), ilike(variants.sku, term), ilike(variants.size, term), ilike(variants.color, term)));
   }
-  const rows = db
+  const rows = await db
     .select({
       variantId: variants.id,
       productId: products.id,
@@ -176,8 +166,7 @@ export async function getStockRows(filter: "all" | "low" | "out" = "all", q = ""
     .from(variants)
     .innerJoin(products, eq(products.id, variants.productId))
     .where(conditions.length ? and(...conditions) : undefined)
-    .orderBy(asc(products.name), asc(variants.color), asc(variants.id))
-    .all();
+    .orderBy(asc(products.name), asc(variants.color), asc(variants.id));
   return { rows, threshold: settings.lowStockThreshold };
 }
 
@@ -189,9 +178,9 @@ export async function getAdminCustomers(q = "", marketingOnly = false) {
   if (marketingOnly) conditions.push(eq(customers.marketingOptIn, true));
   if (q.trim()) {
     const term = `%${q.trim().replace(/[%_]/g, "")}%`;
-    conditions.push(or(like(customers.email, term), like(customers.name, term), like(customers.phone, term)));
+    conditions.push(or(ilike(customers.email, term), ilike(customers.name, term), ilike(customers.phone, term)));
   }
-  return db
+  return await db
     .select({
       id: customers.id,
       email: customers.email,
@@ -200,20 +189,19 @@ export async function getAdminCustomers(q = "", marketingOnly = false) {
       source: customers.source,
       marketingOptIn: customers.marketingOptIn,
       createdAt: customers.createdAt,
-      orderCount: sql<number>`(select count(*) from ${orders} where ${orders.customerId} = ${customers.id} and ${orders.status} in ('paid','shipped','delivered'))`,
+      orderCount: sql<number>`(select count(*)::int from ${orders} where ${orders.customerId} = ${customers.id} and ${orders.status} in ('paid','shipped','delivered'))`,
       spent: sql<number>`(select coalesce(sum(${orders.total}), 0) from ${orders} where ${orders.customerId} = ${customers.id} and ${orders.status} in ('paid','shipped','delivered'))`,
     })
     .from(customers)
     .where(conditions.length ? and(...conditions) : undefined)
-    .orderBy(desc(customers.createdAt))
-    .all();
+    .orderBy(desc(customers.createdAt));
 }
 
 export async function getAdminCustomer(id: number) {
   await requireAdmin();
-  const c = db.select().from(customers).where(eq(customers.id, id)).get();
+  const [c] = await db.select().from(customers).where(eq(customers.id, id)).limit(1);
   if (!c) return null;
-  const list = db.select().from(orders).where(eq(orders.customerId, id)).orderBy(desc(orders.createdAt)).all();
+  const list = await db.select().from(orders).where(eq(orders.customerId, id)).orderBy(desc(orders.createdAt));
   return { ...c, orders: list };
 }
 
@@ -227,10 +215,10 @@ export async function getAdminOrders(status: OrderStatus | "all" = "all", q = ""
   if (q.trim()) {
     const term = `%${q.trim().replace(/[%_]/g, "")}%`;
     conditions.push(
-      or(like(orders.shippingName, term), Number.isInteger(num) && num > 0 ? eq(orders.number, num) : undefined, like(orders.shippingCity, term)),
+      or(ilike(orders.shippingName, term), Number.isInteger(num) && num > 0 ? eq(orders.number, num) : undefined, ilike(orders.shippingCity, term)),
     );
   }
-  return db
+  return await db
     .select({
       id: orders.id,
       number: orders.number,
@@ -239,22 +227,20 @@ export async function getAdminOrders(status: OrderStatus | "all" = "all", q = ""
       createdAt: orders.createdAt,
       name: orders.shippingName,
       city: orders.shippingCity,
-      items: sql<number>`(select coalesce(sum(${orderItems.quantity}), 0) from ${orderItems} where ${orderItems.orderId} = ${orders.id})`,
+      items: sql<number>`(select coalesce(sum(${orderItems.quantity}), 0)::int from ${orderItems} where ${orderItems.orderId} = ${orders.id})`,
     })
     .from(orders)
     .where(conditions.length ? and(...conditions) : undefined)
     .orderBy(desc(orders.createdAt), desc(orders.id))
-    .limit(300)
-    .all();
+    .limit(300);
 }
 
 export async function getOrderSummary() {
   await requireAdmin();
-  const rows = db
-    .select({ status: orders.status, n: count(), total: sql<number>`coalesce(sum(${orders.total}), 0)` })
+  const rows = await db
+    .select({ status: orders.status, n: count(), total: sql<number>`coalesce(sum(${orders.total}), 0)::int` })
     .from(orders)
-    .groupBy(orders.status)
-    .all();
+    .groupBy(orders.status);
   const by = Object.fromEntries(rows.map((r) => [r.status, r])) as Partial<Record<OrderStatus, { n: number; total: number }>>;
   const revenue = REVENUE_STATUSES.reduce((n, s) => n + (by[s]?.total ?? 0), 0);
   const paidOrders = REVENUE_STATUSES.reduce((n, s) => n + (by[s]?.n ?? 0), 0);
@@ -263,10 +249,10 @@ export async function getOrderSummary() {
 
 export async function getAdminOrder(id: number) {
   await requireAdmin();
-  const o = db.select().from(orders).where(eq(orders.id, id)).get();
+  const [o] = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
   if (!o) return null;
-  const items = db.select().from(orderItems).where(eq(orderItems.orderId, id)).orderBy(asc(orderItems.id)).all();
-  const customer = o.customerId ? db.select().from(customers).where(eq(customers.id, o.customerId)).get() : null;
+  const items = await db.select().from(orderItems).where(eq(orderItems.orderId, id)).orderBy(asc(orderItems.id));
+  const [customer] = o.customerId ? await db.select().from(customers).where(eq(customers.id, o.customerId)).limit(1) : [];
   return { ...o, items, customer: customer ?? null };
 }
 
@@ -274,12 +260,13 @@ export async function getAdminOrder(id: number) {
 
 export async function getAdminPopups() {
   await requireAdmin();
-  return db.select().from(popups).orderBy(desc(popups.active), desc(popups.id)).all();
+  return await db.select().from(popups).orderBy(desc(popups.active), desc(popups.id));
 }
 
 export async function getAdminPopup(id: number) {
   await requireAdmin();
-  return db.select().from(popups).where(eq(popups.id, id)).get() ?? null;
+  const [p] = await db.select().from(popups).where(eq(popups.id, id)).limit(1);
+  return p ?? null;
 }
 
 export async function getAdminHomeSections() {

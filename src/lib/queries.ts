@@ -147,7 +147,7 @@ export async function getHomeSections(): Promise<HomeSectionConfig[]> {
 
 /** Lectura directa (sin caché) para el panel. */
 export async function readHomeSections(): Promise<HomeSectionConfig[]> {
-  const row = await db.select().from(settings).where(eq(settings.key, HOME_SECTIONS_KEY)).get();
+  const [row] = await db.select().from(settings).where(eq(settings.key, HOME_SECTIONS_KEY)).limit(1);
   return normalizeHomeSections(row?.value);
 }
 

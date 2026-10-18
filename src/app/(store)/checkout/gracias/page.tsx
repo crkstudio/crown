@@ -24,7 +24,7 @@ async function Content({ searchParams }: Pick<PageProps<"/checkout/gracias">, "s
   const params = await searchParams;
   const number = Number(params.pedido);
   const order = Number.isInteger(number)
-    ? db.select({ status: schema.orders.status }).from(schema.orders).where(eq(schema.orders.number, number)).get()
+    ? (await db.select({ status: schema.orders.status }).from(schema.orders).where(eq(schema.orders.number, number)).limit(1))[0]
     : undefined;
 
   const confirmed = order && order.status !== "pending";

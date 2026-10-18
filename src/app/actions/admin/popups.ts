@@ -83,7 +83,7 @@ export async function createPopup(_prev: PopupFormState, fd: FormData): Promise<
   await requireAdmin();
   const v = parse(fd);
   if (!v.ok) return v.state;
-  db.insert(schema.popups).values(v.data).run();
+  await db.insert(schema.popups).values(v.data);
   refresh();
   redirect("/admin/popups?ok=creado");
 }
@@ -92,20 +92,20 @@ export async function updatePopup(id: number, _prev: PopupFormState, fd: FormDat
   await requireAdmin();
   const v = parse(fd);
   if (!v.ok) return v.state;
-  db.update(schema.popups).set(v.data).where(eq(schema.popups.id, id)).run();
+  await db.update(schema.popups).set(v.data).where(eq(schema.popups.id, id));
   refresh();
   redirect("/admin/popups?ok=guardado");
 }
 
 export async function setPopupActive(id: number, active: boolean) {
   await requireAdmin();
-  db.update(schema.popups).set({ active }).where(eq(schema.popups.id, id)).run();
+  await db.update(schema.popups).set({ active }).where(eq(schema.popups.id, id));
   refresh();
 }
 
 export async function deletePopup(id: number) {
   await requireAdmin();
-  db.delete(schema.popups).where(eq(schema.popups.id, id)).run();
+  await db.delete(schema.popups).where(eq(schema.popups.id, id));
   refresh();
   redirect("/admin/popups?ok=eliminado");
 }

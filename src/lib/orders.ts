@@ -21,18 +21,17 @@ export type NewOrderInput = {
  * si algo falla, no se descuenta nada. Los precios siempre se leen de la base,
  * nunca del navegador.
  */
-export function createOrder(input: NewOrderInput) {
-  return db.transaction((tx) => {
+export async function createOrder(input: NewOrderInput) {
+  return db.transaction(async (tx) => {
     // Unificar líneas repetidas de la misma variante.
     const wanted = new Map<number, number>();
     for (const l of input.lines) wanted.set(l.variantId, (wanted.get(l.variantId) ?? 0) + l.quantity);
 
-    const rows = tx
+    const rows = await tx
       .select({ variant: variants, product: products })
       .from(variants)
       .innerJoin(products, eq(products.id, variants.productId))
-      .where(inArray(variants.id, [...wanted.keys()]))
-      .all();
+      .where(inArray(variants.id, [...wanted.keys()]));
 
     const lines = [...wanted.entries()].map(([variantId, quantity]) => {
       const row = rows.find((r) => r.variant.id === variantId);
@@ -50,7 +49,7 @@ export function createOrder(input: NewOrderInput) {
     const shippingCost = subtotal >= input.settings.freeShippingFrom ? 0 : input.settings.shippingFlat;
     const total = subtotal + shippingCost;
 
-    const customer = tx
+    const [customer] = await tx
       .insert(customers)
       .values({
         email: input.customer.email,
@@ -67,13 +66,14 @@ export function createOrder(input: NewOrderInput) {
           ...(input.customer.marketing ? { marketingOptIn: true } : {}),
         },
       })
-      .returning()
-      .get();
+      .returning();
 
-    const [{ last }] = tx.select({ last: max(orders.number) }).from(orders).all();
+    // Serializa la asignación del número de pedido entre transacciones concurrentes.
+    await tx.execute(sql`select pg_advisory_xact_lock(1001)`);
+    const [{ last }] = await tx.select({ last: max(orders.number) }).from(orders);
     const number = Math.max(last ?? 1000, 1000) + 1;
 
-    const order = tx
+    const [order] = await tx
       .insert(orders)
       .values({
         number,
@@ -91,11 +91,11 @@ export function createOrder(input: NewOrderInput) {
         shippingZip: input.shipping.zip,
         notes: input.shipping.notes || null,
       })
-      .returning()
-      .get();
+      .returning();
 
     for (const l of lines) {
-      tx.insert(orderItems)
+      await tx
+        .insert(orderItems)
         .values({
           orderId: order.id,
           productId: l.product.id,
@@ -106,16 +106,15 @@ export function createOrder(input: NewOrderInput) {
           image: l.product.images[0] ?? null,
           unitPrice: l.product.price,
           quantity: l.quantity,
-        })
-        .run();
+        });
 
       // El "gte" evita stock negativo si dos compras entran a la vez.
-      const res = tx
+      const res = await tx
         .update(variants)
         .set({ stock: sql`${variants.stock} - ${l.quantity}` })
         .where(and(eq(variants.id, l.variant.id), gte(variants.stock, l.quantity)))
-        .run();
-      if (res.changes !== 1) throw new OrderError(`${l.label} se agotó justo ahora.`);
+        .returning({ id: variants.id });
+      if (res.length !== 1) throw new OrderError(`${l.label} se agotó justo ahora.`);
     }
 
     return {
@@ -126,30 +125,30 @@ export function createOrder(input: NewOrderInput) {
 }
 
 /** Cancela un pedido y devuelve el stock reservado. No hace nada si ya estaba cancelado. */
-export function cancelOrderAndRestock(orderId: number) {
-  return db.transaction((tx) => {
-    const order = tx.select().from(orders).where(eq(orders.id, orderId)).get();
+export async function cancelOrderAndRestock(orderId: number) {
+  return db.transaction(async (tx) => {
+    const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).for("update");
     if (!order || order.status === "cancelled") return false;
 
-    const items = tx.select().from(orderItems).where(eq(orderItems.orderId, orderId)).all();
+    const items = await tx.select().from(orderItems).where(eq(orderItems.orderId, orderId));
     for (const it of items) {
       if (it.variantId == null) continue; // la variante fue eliminada
-      tx.update(variants)
+      await tx
+        .update(variants)
         .set({ stock: sql`${variants.stock} + ${it.quantity}` })
-        .where(eq(variants.id, it.variantId))
-        .run();
+        .where(eq(variants.id, it.variantId));
     }
-    tx.update(orders).set({ status: "cancelled" }).where(eq(orders.id, orderId)).run();
+    await tx.update(orders).set({ status: "cancelled" }).where(eq(orders.id, orderId));
     return true;
   });
 }
 
 /** Cambia el estado de un pedido. Un pedido cancelado no se puede reabrir (el stock ya volvió al inventario). */
-export function changeOrderStatus(orderId: number, status: OrderStatus) {
+export async function changeOrderStatus(orderId: number, status: OrderStatus) {
   if (status === "cancelled") return cancelOrderAndRestock(orderId);
-  const order = db.select().from(orders).where(eq(orders.id, orderId)).get();
+  const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
   if (!order) throw new OrderError("El pedido no existe.");
   if (order.status === "cancelled") throw new OrderError("Un pedido cancelado no se puede reabrir: el stock ya volvió al inventario.");
-  db.update(orders).set({ status }).where(eq(orders.id, orderId)).run();
+  await db.update(orders).set({ status }).where(eq(orders.id, orderId));
   return true;
 }

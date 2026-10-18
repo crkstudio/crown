@@ -26,10 +26,10 @@ export async function saveHomeSections(_prev: HomeSectionsState, fd: FormData): 
   if (!sections.some((s) => s.enabled)) return { error: "Dejá al menos una sección prendida: si no, la página de inicio quedaría vacía." };
 
   const value = JSON.stringify(sections);
-  db.insert(schema.settings)
+  await db
+    .insert(schema.settings)
     .values({ key: HOME_SECTIONS_KEY, value })
-    .onConflictDoUpdate({ target: schema.settings.key, set: { value } })
-    .run();
+    .onConflictDoUpdate({ target: schema.settings.key, set: { value } });
 
   updateTag("settings");
   revalidatePath("/");

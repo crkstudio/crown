@@ -2,19 +2,18 @@
 
 Sitio de la marca de ropa deportiva **Crown**: tienda pública minimalista (blanco y negro, barra de navegación flotante con efecto *liquid glass*) y un panel de administración completo.
 
-**Stack:** Next.js 16 (App Router, Cache Components) · React 19 · TypeScript · Tailwind CSS 4 · SQLite + Drizzle ORM · Zod · Zustand · Mercado Pago (preparado).
+**Stack:** Next.js 16 (App Router, Cache Components) · React 19 · TypeScript · Tailwind CSS 4 · Postgres (Supabase) + Drizzle ORM · Zod · Zustand · Mercado Pago (preparado).
 
 ## Puesta en marcha
 
 ```bash
 npm install
-npm run db:setup     # crea la base (data/crown.db), el usuario admin y datos de ejemplo
+npm run db:setup     # crea las tablas en Supabase, el usuario admin y datos de ejemplo (requiere DATABASE_URL en .env.local)
 npm run dev          # http://localhost:3000
 ```
 
 - Tienda: <http://localhost:3000>
 - Panel: <http://localhost:3000/admin> (el usuario y la contraseña iniciales están en `.env.local`: `ADMIN_EMAIL` / `ADMIN_PASSWORD`). **Cambiá la contraseña** desde *Admin → Ajustes*.
-- `npm run db:reset` borra la base y la vuelve a crear con los datos de ejemplo.
 - Para empezar de cero, sin productos de ejemplo: `npm run db:push && npm run db:seed -- --no-demo`.
 
 ## Qué incluye
@@ -59,12 +58,11 @@ Para usar otra pasarela alcanza con implementar la interfaz de `src/lib/payments
 - El CSV exportado neutraliza fórmulas de planilla.
 
 ## Despliegue
-La base es un archivo SQLite y las fotos se guardan en disco (`data/`), así que necesita un servidor con **disco persistente** (VPS, Railway, Render, Fly.io con volumen). **No sirve para Vercel** u otros entornos serverless de disco efímero: en ese caso hay que migrar a Postgres (Drizzle lo soporta) y a un almacenamiento de archivos (S3/R2).
-
+La base es Postgres (Supabase). Las fotos todavía se guardan en disco (`data/`): para Vercel falta migrarlas a Supabase Storage (siguiente paso).
 ```bash
 npm run build && npm run start
 ```
-Antes del primer deploy: definí `SESSION_SECRET` (`openssl rand -hex 32`), `ADMIN_EMAIL`, `ADMIN_PASSWORD` y `NEXT_PUBLIC_SITE_URL`, y hacé copias periódicas de la carpeta `data/`.
+Antes del primer deploy: definí `SESSION_SECRET` (`openssl rand -hex 32`), `ADMIN_EMAIL`, `ADMIN_PASSWORD` y `NEXT_PUBLIC_SITE_URL`, y activá los backups de Supabase (y, hasta migrar las fotos a Storage, copiá `data/`).
 
 ## Estructura
 ```

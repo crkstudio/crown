@@ -26,7 +26,7 @@ export async function getSession(): Promise<SessionPayload | null> {
   const session = await verifySession(token);
   if (!session) return null;
   // Si borraron al admin de la base, la sesión deja de valer aunque el token no haya vencido.
-  const admin = db.select({ id: schema.admins.id }).from(schema.admins).where(eq(schema.admins.id, session.adminId)).get();
+  const [admin] = await db.select({ id: schema.admins.id }).from(schema.admins).where(eq(schema.admins.id, session.adminId)).limit(1);
   return admin ? session : null;
 }
 

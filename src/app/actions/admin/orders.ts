@@ -11,7 +11,7 @@ export async function updateOrderStatus(orderId: number, status: string): Promis
   const parsed = z.enum(ORDER_STATUSES).safeParse(status);
   if (!parsed.success || !Number.isInteger(orderId)) return { error: "Estado no válido." };
   try {
-    changeOrderStatus(orderId, parsed.data);
+    await changeOrderStatus(orderId, parsed.data);
   } catch (e) {
     if (e instanceof OrderError) return { error: e.message };
     throw e;

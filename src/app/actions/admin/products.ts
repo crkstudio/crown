@@ -78,15 +78,15 @@ function validate(fd: FormData) {
   return { ok: true as const, data: d };
 }
 
-function uniqueSlug(base: string, excludeId?: number) {
+async function uniqueSlug(base: string, excludeId?: number) {
   const root = slugify(base) || "producto";
   let slug = root;
   for (let n = 2; ; n++) {
-    const clash = db
+    const [clash] = await db
       .select({ id: products.id })
       .from(products)
       .where(excludeId ? and(eq(products.slug, slug), ne(products.id, excludeId)) : eq(products.slug, slug))
-      .get();
+      .limit(1);
     if (!clash) return slug;
     slug = `${root}-${n}`;
   }
@@ -103,11 +103,12 @@ export async function createProduct(_prev: ProductFormState, fd: FormData): Prom
   if (!v.ok) return v.state;
   const d = v.data;
 
-  db.transaction((tx) => {
-    const p = tx
+  const slug = await uniqueSlug(d.name);
+  await db.transaction(async (tx) => {
+    const [p] = await tx
       .insert(products)
       .values({
-        slug: uniqueSlug(d.name),
+        slug,
         name: d.name,
         category: d.category,
         description: d.description,
@@ -117,9 +118,10 @@ export async function createProduct(_prev: ProductFormState, fd: FormData): Prom
         listed: d.listed,
         featured: d.featured,
       })
-      .returning()
-      .get();
-    for (const x of d.variants) tx.insert(variants).values({ productId: p.id, size: x.size, color: x.color, sku: x.sku, stock: x.stock }).run();
+      .returning();
+    if (d.variants.length) {
+      await tx.insert(variants).values(d.variants.map((x) => ({ productId: p.id, size: x.size, color: x.color, sku: x.sku, stock: x.stock })));
+    }
   });
   refreshStore();
   redirect("/admin/productos?ok=creado");
@@ -131,11 +133,12 @@ export async function updateProduct(id: number, _prev: ProductFormState, fd: For
   if (!v.ok) return v.state;
   const d = v.data;
 
-  const existing = db.select().from(products).where(eq(products.id, id)).get();
+  const [existing] = await db.select().from(products).where(eq(products.id, id)).limit(1);
   if (!existing) return { error: "Este producto ya no existe." };
 
-  db.transaction((tx) => {
-    tx.update(products)
+  await db.transaction(async (tx) => {
+    await tx
+      .update(products)
       .set({
         name: d.name,
         category: d.category,
@@ -147,21 +150,20 @@ export async function updateProduct(id: number, _prev: ProductFormState, fd: For
         featured: d.featured,
         updatedAt: new Date(),
       })
-      .where(eq(products.id, id))
-      .run();
+      .where(eq(products.id, id));
 
     // Sincronizar variantes: se actualizan las conocidas, se crean las nuevas y se borran las que sacaron del formulario.
-    const current = tx.select({ id: variants.id }).from(variants).where(eq(variants.productId, id)).all();
+    const current = await tx.select({ id: variants.id }).from(variants).where(eq(variants.productId, id));
     const currentIds = new Set(current.map((c) => c.id));
     const keepIds = new Set(d.variants.flatMap((x) => (x.id && currentIds.has(x.id) ? [x.id] : [])));
     const toDelete = [...currentIds].filter((cid) => !keepIds.has(cid));
-    if (toDelete.length) tx.delete(variants).where(inArray(variants.id, toDelete)).run();
+    if (toDelete.length) await tx.delete(variants).where(inArray(variants.id, toDelete));
 
     for (const x of d.variants) {
       if (x.id && currentIds.has(x.id)) {
-        tx.update(variants).set({ size: x.size, color: x.color, sku: x.sku, stock: x.stock }).where(eq(variants.id, x.id)).run();
+        await tx.update(variants).set({ size: x.size, color: x.color, sku: x.sku, stock: x.stock }).where(eq(variants.id, x.id));
       } else {
-        tx.insert(variants).values({ productId: id, size: x.size, color: x.color, sku: x.sku, stock: x.stock }).run();
+        await tx.insert(variants).values({ productId: id, size: x.size, color: x.color, sku: x.sku, stock: x.stock });
       }
     }
   });
@@ -172,7 +174,7 @@ export async function updateProduct(id: number, _prev: ProductFormState, fd: For
 export async function deleteProduct(id: number) {
   await requireAdmin();
   // Los pedidos viejos conservan nombre, talle y precio (están copiados en cada línea del pedido).
-  db.delete(products).where(eq(products.id, id)).run();
+  await db.delete(products).where(eq(products.id, id));
   refreshStore();
   redirect("/admin/productos?ok=eliminado");
 }
@@ -180,13 +182,13 @@ export async function deleteProduct(id: number) {
 /** Listar u ocultar de la tienda, sin borrar nada. */
 export async function setProductListed(id: number, listed: boolean) {
   await requireAdmin();
-  db.update(products).set({ listed, updatedAt: new Date() }).where(eq(products.id, id)).run();
+  await db.update(products).set({ listed, updatedAt: new Date() }).where(eq(products.id, id));
   refreshStore();
 }
 
 export async function setProductFeatured(id: number, featured: boolean) {
   await requireAdmin();
-  db.update(products).set({ featured, updatedAt: new Date() }).where(eq(products.id, id)).run();
+  await db.update(products).set({ featured, updatedAt: new Date() }).where(eq(products.id, id));
   refreshStore();
 }
 
@@ -195,7 +197,7 @@ export async function setVariantStock(variantId: number, stock: number) {
   await requireAdmin();
   const value = z.number().int().min(0).max(100000).safeParse(stock);
   if (!value.success) return { error: "El stock debe ser un número entero de 0 en adelante." };
-  db.update(variants).set({ stock: value.data }).where(eq(variants.id, variantId)).run();
+  await db.update(variants).set({ stock: value.data }).where(eq(variants.id, variantId));
   refreshStore();
   return { ok: true as const };
 }

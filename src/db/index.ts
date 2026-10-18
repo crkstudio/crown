@@ -1,24 +1,27 @@
 import "server-only";
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import path from "node:path";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
 import * as schema from "./schema";
 
-const file = process.env.DATABASE_URL ?? path.join(process.cwd(), "data", "crown.db");
+const url = process.env.DATABASE_URL;
+if (!url) {
+  throw new Error("Falta DATABASE_URL. Copiá la cadena de conexión de Supabase (Connect → Transaction pooler) en .env.local.");
+}
 
 // Reutilizamos la conexión entre recargas en desarrollo.
-const globalForDb = globalThis as unknown as { __crownSqlite?: Database.Database };
+const globalForDb = globalThis as unknown as { __crownSql?: ReturnType<typeof postgres> };
 
-const sqlite =
-  globalForDb.__crownSqlite ??
-  (() => {
-    const conn = new Database(file);
-    conn.pragma("journal_mode = WAL");
-    conn.pragma("foreign_keys = ON");
-    return conn;
-  })();
+const client =
+  globalForDb.__crownSql ??
+  postgres(url, {
+    // El pooler de Supabase en modo transacción no admite prepared statements.
+    prepare: false,
+    // En serverless cada instancia usa una sola conexión; el pooler multiplexa.
+    max: process.env.NODE_ENV === "production" ? 1 : 10,
+    idle_timeout: 20,
+  });
 
-if (process.env.NODE_ENV !== "production") globalForDb.__crownSqlite = sqlite;
+if (process.env.NODE_ENV !== "production") globalForDb.__crownSql = client;
 
-export const db = drizzle(sqlite, { schema });
+export const db = drizzle(client, { schema });
 export { schema };
