@@ -34,6 +34,25 @@ export const EMPTY_PRODUCT: ProductDraft = {
 
 const SIZE_PRESETS = ["XS", "S", "M", "L", "XL", "Único"];
 
+/** Achica y convierte a WebP en el navegador, para no pasar el límite de ~4,5 MB por request de Vercel. */
+async function shrink(file: File): Promise<File> {
+  let bmp: ImageBitmap;
+  try {
+    bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
+  } catch {
+    throw new Error(`"${file.name}" no se pudo leer. Usá JPG, PNG o WebP.`);
+  }
+  const scale = Math.min(1, 1600 / bmp.width, 2000 / bmp.height);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bmp.width * scale);
+  canvas.height = Math.round(bmp.height * scale);
+  canvas.getContext("2d")!.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  bmp.close();
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", 0.85));
+  if (!blob) throw new Error(`No se pudo procesar "${file.name}".`);
+  return new File([blob], file.name.replace(/\.\w+$/, "") + ".webp", { type: "image/webp" });
+}
+
 function Err({ id, msg }: { id: string; msg?: string }) {
   return msg ? (
     <p id={id} role="alert" className="mt-1.5 text-sm font-medium text-rose-700">
@@ -66,23 +85,26 @@ export function ProductForm({
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function upload(files: FileList | null) {
-    if (!files?.length) return;
-    setUploading(true);
-    setUploadError("");
-    const body = new FormData();
-    for (const f of Array.from(files)) body.append("files", f);
-    try {
+  if (!files?.length) return;
+  setUploading(true);
+  setUploadError("");
+  try {
+    // De a una: cada request queda muy por debajo del límite de Vercel.
+    for (const f of Array.from(files).slice(0, 8 - images.length)) {
+      const body = new FormData();
+      body.append("files", await shrink(f));
       const res = await fetch("/api/admin/upload", { method: "POST", body });
-      const json = await res.json();
+      const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.error ?? "No se pudo subir");
       setImages((prev) => [...prev, ...json.urls].slice(0, 8));
-    } catch (e) {
-      setUploadError(e instanceof Error ? e.message : "No se pudo subir");
-    } finally {
-      setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
     }
+  } catch (e) {
+    setUploadError(e instanceof Error ? e.message : "No se pudo subir");
+  } finally {
+    setUploading(false);
+    if (fileRef.current) fileRef.current.value = "";
   }
+}
 
   const move = (i: number, dir: -1 | 1) =>
     setImages((prev) => {

@@ -28,7 +28,16 @@ const productSchema = z.object({
   compareAtPrice: z.number().int().min(1).max(100_000_000).nullable(),
   listed: z.boolean(),
   featured: z.boolean(),
-  images: z.array(z.string().regex(/^\/media\/[a-f0-9-]{36}\.webp$/, "Imagen no válida")).max(8),
+  images: z
+  .array(
+    z
+      .string()
+      .regex(
+        /^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/products\/[a-f0-9-]{36}\.webp$/,
+        "Imagen no válida",
+      ),
+  )
+  .max(8),
   variants: z.array(variantSchema).min(1, "Agregá al menos una variante (talle y color)").max(80),
 });
 
