@@ -14,12 +14,12 @@ const globalForDb = globalThis as unknown as { __crownSql?: ReturnType<typeof po
 const client =
   globalForDb.__crownSql ??
   postgres(url, {
-    // El pooler de Supabase en modo transacción no admite prepared statements.
-    prepare: false,
-    // En serverless cada instancia usa una sola conexión; el pooler multiplexa.
-    max: process.env.NODE_ENV === "production" ? 1 : 10,
-    idle_timeout: 20,
-  });
+  prepare: false,
+  max: process.env.NODE_ENV === "production" ? 1 : 10,
+  idle_timeout: 20,
+  connect_timeout: 10,
+  ssl: "require",
+});
 
 if (process.env.NODE_ENV !== "production") globalForDb.__crownSql = client;
 
