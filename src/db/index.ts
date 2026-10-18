@@ -14,12 +14,15 @@ const globalForDb = globalThis as unknown as { __crownSql?: ReturnType<typeof po
 const client =
   globalForDb.__crownSql ??
   postgres(url, {
-  prepare: false,
-  max: process.env.NODE_ENV === "production" ? 1 : 10,
-  idle_timeout: 20,
-  connect_timeout: 10,
-  ssl: "require",
-});
+    // El pooler de Supabase en modo transacción no admite prepared statements.
+    prepare: false,
+    max: process.env.NODE_ENV === "production" ? 1 : 10,
+    // Vercel congela las funciones entre requests: conexiones que viven poco para no reutilizar una muerta.
+    idle_timeout: 5,
+    max_lifetime: 60,
+    connect_timeout: 10,
+    ssl: "require",
+  });
 
 if (process.env.NODE_ENV !== "production") globalForDb.__crownSql = client;
 
