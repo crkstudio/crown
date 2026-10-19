@@ -8,7 +8,6 @@ export function SiteFooter() {
       <div className="mx-auto grid max-w-[1500px] gap-12 px-5 py-14 sm:px-10 md:grid-cols-[1fr_auto]">
         <div>
           <CrownMark className="w-40 sm:w-56" />
-          <p className="mt-6 max-w-sm text-muted">Ropa deportiva minimalista para entrenar en serio.</p>
         </div>
 
         <nav aria-label="Pie de página" className="flex flex-wrap gap-x-16 gap-y-10 text-sm">
