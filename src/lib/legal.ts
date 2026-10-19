@@ -27,6 +27,12 @@ export const LEGAL = {
   updatedAt: "19 de octubre de 2026",
 } as const;
 
+/** Redes sociales del pie de página. ⚠️ COMPLETAR con los perfiles reales de la marca. */
+export const SOCIAL = {
+  instagram: "https://www.instagram.com/", // ej: https://www.instagram.com/crown.ar
+  tiktok: "https://www.tiktok.com/", // ej: https://www.tiktok.com/@crown.ar
+} as const;
+
 /** Leyenda y enlace que exige la Ventanilla Federal Única (Disp. 890/2025). */
 export const CONSUMER_COMPLAINT = {
   label: "Defensa de las y los Consumidores. Para reclamos ingrese aquí",
