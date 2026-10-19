@@ -9,12 +9,6 @@ export function SiteFooter() {
         <div>
           <CrownMark className="w-40 sm:w-56" />
           <p className="mt-6 max-w-sm text-muted">Ropa deportiva minimalista para entrenar en serio.</p>
-
-          {/* Disp. 954/2025: enlace a simple vista, en lugar destacado y sin registro previo. */}
-          <Link href="/arrepentimiento" className="btn btn-primary mt-8 px-8 py-4 text-base">
-            Botón de arrepentimiento
-          </Link>
-          <p className="mt-3 max-w-sm text-sm text-muted">Revocá tu compra dentro de los {LEGAL.withdrawalDays} días corridos desde que la recibís.</p>
         </div>
 
         <nav aria-label="Pie de página" className="flex flex-wrap gap-x-16 gap-y-10 text-sm">

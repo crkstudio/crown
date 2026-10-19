@@ -128,6 +128,30 @@ export const orderItems = pgTable(
   (t) => [index("order_items_order_idx").on(t.orderId)],
 ).enableRLS();
 
+/* ───────────── Arrepentimientos (Disp. 954/2025) ───────────── */
+export const WITHDRAWAL_STATUSES = ["received", "processed", "rejected"] as const;
+export type WithdrawalStatus = (typeof WITHDRAWAL_STATUSES)[number];
+
+export const withdrawals = pgTable(
+  "withdrawals",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    /** Código de identificación que se le entrega al cliente (ARR-XXXXXX). */
+    code: text("code").notNull(),
+    // Si se borra el pedido, la solicitud se conserva con su número.
+    orderId: integer("order_id").references(() => orders.id, { onDelete: "set null" }),
+    orderNumber: integer("order_number").notNull(),
+    name: text("name").notNull(),
+    email: text("email").notNull(),
+    phone: text("phone"),
+    /** Qué producto/s devuelve y cómo prefiere coordinar el reembolso. */
+    detail: text("detail").notNull().default(""),
+    status: text("status").$type<WithdrawalStatus>().notNull().default("received"),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("withdrawals_code_idx").on(t.code), index("withdrawals_status_idx").on(t.status)],
+).enableRLS();
+
 /* ───────────── Athletes ───────────── */
 export const athletes = pgTable("athletes", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
@@ -178,5 +202,6 @@ export type Variant = typeof variants.$inferSelect;
 export type Customer = typeof customers.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
+export type Withdrawal = typeof withdrawals.$inferSelect;
 export type Athlete = typeof athletes.$inferSelect;
 export type Popup = typeof popups.$inferSelect;

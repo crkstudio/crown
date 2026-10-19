@@ -6,6 +6,7 @@ import { connection } from "next/server";
 import { db, schema } from "@/db";
 import { ClearCart } from "@/components/clear-cart";
 import { CrownMark } from "@/components/crown-logo";
+import { WithdrawalDialog } from "@/components/withdrawal-dialog";
 import { confirmMercadoPagoPayment } from "@/lib/payments/confirm";
 
 export const metadata: Metadata = { title: "Gracias por tu compra", robots: { index: false } };
@@ -63,6 +64,12 @@ async function Content({ searchParams }: Pick<PageProps<"/checkout/gracias">, "s
       <Link href="/tienda" className="btn btn-primary mt-10">
         Seguir comprando
       </Link>
+      {order && (
+        <div className="mt-16 border-t border-line pt-10">
+          {/* Disp. 954/2025: botón de arrepentimiento a simple vista, sin registro previo. */}
+          <WithdrawalDialog orderNumber={number} />
+        </div>
+      )}
     </>
   );
 }

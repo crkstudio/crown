@@ -294,3 +294,10 @@ export async function getAdminAthlete(id: number) {
   const [a] = await db.select().from(athletes).where(eq(athletes.id, id)).limit(1);
   return a ?? null;
 }
+
+/* ───────────── Arrepentimientos ───────────── */
+
+export async function getAdminWithdrawals() {
+  await requireAdmin();
+  return db.select().from(schema.withdrawals).orderBy(desc(schema.withdrawals.createdAt)).limit(200);
+}
