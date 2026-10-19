@@ -5,8 +5,8 @@ import { CONSUMER_COMPLAINT, LEGAL, LEGAL_LINKS, SOCIAL } from "@/lib/legal";
 /* Lucide ya no incluye íconos de marcas: van como SVG propios. */
 function InstagramIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <rect x="3" y="3" width="18" height="18" rx="5" />
+    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="3" y="3" width="26" height="26" rx="5" />
       <circle cx="12" cy="12" r="4" />
       <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
     </svg>
@@ -15,14 +15,14 @@ function InstagramIcon() {
 
 function TikTokIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M15 3v11.5a4.5 4.5 0 1 1-4.5-4.5" />
       <path d="M15 3c.4 2.6 2.1 4.2 5 4.4" />
     </svg>
   );
 }
 
-const socialBtn = "inline-flex items-center gap-2.5 rounded-full border border-black px-4 py-2 font-semibold transition-colors hover:bg-black hover:text-white";
+const socialBtn = "inline-block transition-opacity hover:opacity-60";
 
 export function SiteFooter() {
   return (
@@ -36,13 +36,13 @@ export function SiteFooter() {
         <nav aria-label="Pie de página" className="flex flex-wrap gap-x-16 gap-y-10 text-sm">
           <ul className="space-y-3" aria-label="Redes sociales">
             <li>
-              <a href={SOCIAL.instagram} target="_blank" rel="noopener noreferrer" className={socialBtn}>
-                <InstagramIcon /> Instagram
+              <a href={SOCIAL.instagram} target="_blank" rel="noopener noreferrer" className={socialBtn} aria-label="Instagram">
+                <InstagramIcon />
               </a>
             </li>
             <li>
-              <a href={SOCIAL.tiktok} target="_blank" rel="noopener noreferrer" className={socialBtn}>
-                <TikTokIcon /> TikTok
+              <a href={SOCIAL.tiktok} target="_blank" rel="noopener noreferrer" className={socialBtn} aria-label="TikTok">
+                <TikTokIcon />
               </a>
             </li>
           </ul>
