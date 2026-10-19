@@ -45,16 +45,6 @@ export function SiteFooter() {
           </ul>
         </nav>
       </div>
-
-      {/* Datos del proveedor (Ley 24.240 art. 4 y Res. 270/2020). */}
-      <div className="mx-auto max-w-[1500px] border-t border-line px-5 py-6 text-sm text-muted sm:px-10">
-        <p>
-          {LEGAL.legalName} · CUIT {LEGAL.cuit} · {LEGAL.address}
-        </p>
-        <p className="mt-1">
-          Atención al consumidor: {LEGAL.email} · {LEGAL.phone} · {LEGAL.hours}
-        </p>
-      </div>
       <div className="mx-auto max-w-[1500px] px-5 pb-8 text-sm text-muted sm:px-10">© 2026 crown. Todos los derechos reservados. Precios finales en pesos argentinos con IVA incluido.</div>
     </footer>
   );
