@@ -59,7 +59,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
       {
         title: "8. Arrepentimiento, cambios y garantía",
         paragraphs: [
-          `Podés arrepentirte de tu compra dentro de los ${LEGAL.withdrawalDays} días corridos desde que recibís el producto o celebrás el contrato, lo que ocurra último, usando el “Botón de arrepentimiento” de este sitio. Las condiciones de cambios, devoluciones y garantía están en sus páginas específicas.`,
+          `Podés arrepentirte de tu compra dentro de los ${LEGAL.withdrawalDays} días corridos desde que recibís el producto o celebrás el contrato, lo que ocurra último, usando el “Botón de arrepentimiento” de la página de confirmación de tu compra o escribiéndonos a ${LEGAL.email}. Las condiciones de cambios, devoluciones y garantía están en sus páginas específicas.`,
         ],
       },
       {
@@ -101,7 +101,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
         title: "1. Botón de arrepentimiento (devolución sin causa)",
         paragraphs: [
           `Tenés ${LEGAL.withdrawalDays} días corridos para arrepentirte de tu compra, contados desde que recibís el producto o celebrás el contrato (lo que ocurra último), sin dar explicaciones (art. 34 Ley 24.240 y art. 1110 Código Civil y Comercial). Este derecho no puede ser renunciado.`,
-          "Para ejercerlo usá el “Botón de arrepentimiento” del sitio: no necesitás registrarte ni hacer otro trámite. Dentro de las 24 horas, por el mismo medio, te damos un código de identificación de tu solicitud y te indicamos cómo devolver el producto.",
+          `Para ejercerlo usá el “Botón de arrepentimiento” de la página de confirmación de tu compra (“Gracias por tu compra”): completás un formulario con tus datos y el número de pedido, sin registrarte ni hacer otro trámite. Si ya cerraste esa página, escribinos a ${LEGAL.email} indicando tu número de pedido. Dentro de las 24 horas, por el mismo medio, te damos un código de identificación de tu solicitud y te indicamos cómo devolver el producto y coordinar el reembolso.`,
         ],
       },
       {
