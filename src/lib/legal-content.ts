@@ -190,7 +190,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
           "Al comprar: nombre y apellido, email, teléfono, domicilio de entrega y notas del envío.",
           "Al dejar tu email en un pop-up: tu email, para enviarte el beneficio ofrecido.",
           "Al usar el botón de arrepentimiento: nombre, email, teléfono (opcional), número de pedido y detalle de la devolución.",
-          "En tu navegador guardamos el carrito y si ya viste un pop-up (almacenamiento local). Hoy no usamos cookies de seguimiento publicitario.",
+          "En tu navegador guardamos el carrito, si ya viste un pop-up y tu elección sobre el aviso de cookies (almacenamiento local). Para el acceso del equipo al panel de administración usamos una cookie técnica de sesión, estrictamente necesaria. Hoy no usamos cookies de seguimiento publicitario ni de analítica; si lo hacemos en el futuro, solo será con tu consentimiento.",
         ],
         paragraphs: ["No almacenamos los datos de tu tarjeta: los procesa Mercado Pago."],
       },
