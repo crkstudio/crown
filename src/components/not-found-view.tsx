@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CrownMark } from "@/components/crown-logo";
+import { CrownMark } from "./crown-logo";
 
 export function NotFoundView() {
   return (
