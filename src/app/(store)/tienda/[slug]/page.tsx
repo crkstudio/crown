@@ -6,6 +6,7 @@ import { ChevronLeft } from "lucide-react";
 import { AddToCart } from "@/components/add-to-cart";
 import { ProductImage } from "@/components/product-image";
 import { getProductBySlug, getStoreSettings } from "@/lib/queries";
+import { JsonLd, productJsonLd } from "@/lib/json-ld";
 import { discountPercent, formatPrice } from "@/lib/utils";
 
 export async function generateMetadata({ params }: PageProps<"/tienda/[slug]">): Promise<Metadata> {
@@ -38,6 +39,7 @@ async function ProductView({ params }: Pick<PageProps<"/tienda/[slug]">, "params
 
   return (
     <div className="grid gap-10 lg:grid-cols-[1.25fr_1fr] lg:gap-16">
+      <JsonLd data={productJsonLd(product)} />
       <div className={images.length > 1 ? "grid grid-cols-2 gap-3" : ""}>
         {images.map((src, i) => (
           <ProductImage

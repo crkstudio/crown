@@ -6,6 +6,7 @@ import "@fontsource/pinyon-script/400.css";
 import { ProductCard } from "@/components/product-card";
 import { ProductImage } from "@/components/product-image";
 import { getAthletes, getCategories, getFeaturedProducts, getHomeSections, getStoreProducts } from "@/lib/queries";
+import { JsonLd, organizationJsonLd } from "@/lib/json-ld";
 import type { HomeSectionId } from "@/lib/home-sections";
 
 /** A dónde baja la barra blanca de la portada: la primera sección visible que sigue. */
@@ -25,6 +26,7 @@ export default async function HomePage() {
   return (
     // Si no hay portada, la barra flotante queda sobre la primera sección: se deja aire arriba.
     <div className={visible[0] === "hero" ? undefined : "pt-28"}>
+      <JsonLd data={organizationJsonLd()} />
       {visible.map((id) => {
         switch (id) {
           case "hero":
